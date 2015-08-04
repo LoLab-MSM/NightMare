@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import os
 import earm
 from earm.lopez_embedded import model as EARM
-
+from nightmare import Nightmare
 
 
 
@@ -113,14 +113,15 @@ def likelihood(position):
     yfinal = ysim_momp[-1]
     momp_sim = [td, ts, yfinal]
     e3 = np.sum((momp_data - momp_sim) ** 2 / (2 * momp_var)) / 3
-    error = e1 + e2 +e3
-    return error,
+    error = -1.*np.log(e1) + -1.*np.log(e2) + -1.*np.log(e3)
+    return -1*error,
     #return (e1, e2, e3,)
 
-from nightmare import Nightmare
+
 nm = Nightmare(EARM,likelihood,tspan,xnominal,'test')
-nm.run_pso(5, 20,100)
-nm.run_DREAM()
+nm.run_pso(5, 15,50)
+traces = nm.run_DREAM()
+display(traces['params'][0])
 quit()
 
 
