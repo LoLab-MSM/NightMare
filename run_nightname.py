@@ -9,7 +9,7 @@ import os
 import earm
 from earm.lopez_embedded import model as EARM
 from nightmare import Nightmare
-
+import pickle
 
 
 obs_names = ['mBid', 'cPARP']
@@ -73,8 +73,8 @@ def display(position):
 def likelihood(position):
     Y=np.copy(position)
     param_values[rate_mask] = 10 ** Y
-    changes={}
-    changes['Bid_0'] = 0
+    #changes={}
+    #changes['Bid_0'] = 0
     #solver.run(param_values)
     #ysim_momp = solver.yobs[momp_obs]
     #if np.nanmax(ysim_momp) == 0:
@@ -114,14 +114,36 @@ def likelihood(position):
     momp_sim = [td, ts, yfinal]
     e3 = np.sum((momp_data - momp_sim) ** 2 / (2 * momp_var)) / 3
     error = -1.*np.log(e1) + -1.*np.log(e2) + -1.*np.log(e3)
+    #print error
     return -1*error,
     #return (e1, e2, e3,)
 
+if "__main__" == __name__:
 
-nm = Nightmare(EARM,likelihood,tspan,xnominal,'test')
-nm.run_pso(5, 15,50)
-traces = nm.run_DREAM()
-display(traces['params'][0])
-quit()
+    nm = Nightmare(EARM,likelihood,xnominal,'test')
+    nm.run_pso(8, 25,200)
+    ranked = nm.pso.return_ranked_populations()
+    np.save('ndim_banana_seed.npy',ranked)
+    # for i in nm.pso_results:
+    #     print i['params']
+    #     display(i['params'])
+    traces = nm.run_DREAM(nsamples=500000)
+    from pymc.backends import text
+    text.dump('earm_traces_from_pymc_save_500000', traces)    
+        
+    dictionary_to_pickle = {}
+    
+    for dictionary in traces:
+        for var in dictionary:
+            dictionary_to_pickle[var] = traces[var] 
+    
+    pickle.dump(dictionary_to_pickle, open('test_traces_500000.p', 'wb'))
+    # for n,each in enumerate(dictionary_to_pickle['params'][0]):
+    #     plt.plot(n, likelihood(each),'or')
+    # plt.plot(traces['error'][0])
+    # 
+    # plt.show()
+    
+    quit()
 
 

@@ -4,14 +4,13 @@ import theano.tensor as t
 import numpy as np
 import pymc
 import pylab as plt
-
+theano.config.exception_verbosity='high'
 
 class Nightmare():
-    def __init__(self,model,cost_function,time,start_parameters,savename,bound=1):
+    def __init__(self,model,cost_function,start_parameters,savename,):
         self.model = model
         self.cost_function = cost_function
         self.start_parameters = start_parameters
-        self.bound = bound
         self.set_PSO()
         self.savename = savename
         
@@ -20,7 +19,7 @@ class Nightmare():
         self.pso.set_cost_function(self.cost_function)
         self.pso.update_w = True
         self.pso.set_start_position(self.start_parameters)
-        self.pso.set_bounds(self.bound)
+        self.pso.set_bounds(2.0)
         self.pso.set_speed(-0.5,0.5)
         
     def run_pso(self,nchains,nparticles,niterations):
@@ -34,21 +33,19 @@ class Nightmare():
     
 
     
-    def run_DREAM(self):
+    def run_DREAM(self,nsamples=100000):
         model = pymc.Model()
         with model:
             params = pymc.Normal('params', mu=self.start_parameters, 
-                                 sd=np.array([self.bound]*len(self.start_parameters)),
-                                 shape=(len(self.start_parameters)))
+                                 sd=np.array([1.0]*len(self.start_parameters)),
+                                shape=(len(self.start_parameters)))
+            #params = pymc.Flat('params',shape=(len(self.start_parameters)))           
               
             global cost_function
             cost_function = self.cost_function
+            error = pymc.Potential('error', DREAM_cost(params))
             
-            error = DREAM_cost(params)
-            error = pymc.Deterministic('error', error)
-
             nseedchains = 10*len(self.model.parameters_rules())
-            
             step = pymc.Dream(variables=[params],
                               nseedchains=nseedchains, 
                               blocked=True,
@@ -56,17 +53,14 @@ class Nightmare():
                               save_history=True,
                               parallel=True,
                               adapt_crossover=False,
-                              verbose=False,
-                              model_name = self.savename)
-
-            
-
-            trace = pymc.sample(10000, step,
+                              verbose=False,)
+         
+            trace = pymc.sample(nsamples, step,
                                 start=self.pso_results, 
                                 njobs=self.nchains,
                                 use_mpi=False,
-                                progressbar=True) 
-            pymc.traceplot(trace[1000:],vars=['params','error'])
+                                progressbar=True,) 
+            pymc.traceplot(trace,vars=[params,error])
             plt.show()
             return trace
 
@@ -74,5 +68,5 @@ class Nightmare():
 def DREAM_cost(parameters):
     global cost_function
     like = cost_function(parameters)
-    return -1.*like[0]
+    return np.array(-1.*like[0])
             
