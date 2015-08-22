@@ -1,20 +1,18 @@
 #Clustering of parameter vectors
 
-import matplotlib
-matplotlib.use('Agg')
-
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
-import csv
 import os
-import numpy
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.mlab import PCA as mlabPCA
+import sys
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 cm = plt.cm.get_cmap('RdYlBu')
 
 
-data = pickle.load(open('test_traces2.p'))
+data = pickle.load(sys.argv[1])
 print "shape of all data = ",len(data)
 params = [ i for i in data['params']]
 params = np.asarray(params)
