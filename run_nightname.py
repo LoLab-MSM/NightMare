@@ -90,9 +90,9 @@ def likelihood(position):
         ydata = exp_data[data_name]
         yvar = exp_data[var_name]
         if obs_name == 'mBid':
-            e1 = np.sum((ydata - ysim_norm) ** 2 / (2 * yvar)) / len(ydata)
+            e1 = np.sum(np.exp(-1.*(ydata - ysim_norm) ** 2 / (2 * yvar))) 
         else:
-            e2 = np.sum((ydata - ysim_norm) ** 2 / (2 * yvar)) / len(ydata)
+            e2 = np.sum(np.exp(-1.*(ydata - ysim_norm) ** 2 / (2 * yvar))) 
     ysim_momp = solver.yobs[momp_obs]
     if np.nanmax(ysim_momp) == 0:
         print 'No aSmac!'
@@ -112,14 +112,14 @@ def likelihood(position):
     ts = t90 - t10
     yfinal = ysim_momp[-1]
     momp_sim = [td, ts, yfinal]
-    e3 = np.sum((momp_data - momp_sim) ** 2 / (2 * momp_var)) / 3
+    e3 = np.sum(np.exp(-1*(momp_data - momp_sim) ** 2 / (2 * momp_var)))
     error = -1.*np.log(e1) + -1.*np.log(e2) + -1.*np.log(e3)
     #print error
     return -1*error,
     #return (e1, e2, e3,)
 
 if "__main__" == __name__:
-
+    
     nm = Nightmare(EARM,likelihood,xnominal,'test')
     nm.run_pso(8, 25,200)
     ranked = nm.pso.return_ranked_populations()
