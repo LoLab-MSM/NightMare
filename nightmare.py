@@ -1,9 +1,11 @@
-from refactored_pso import PSO
+from pso import PSO
 import theano
 import theano.tensor as t
 import numpy as np
 import pymc
 import pylab as plt
+from pymc.diagnostics import gelman_rubin
+
 theano.config.exception_verbosity='high'
 
 class Nightmare():
@@ -19,8 +21,8 @@ class Nightmare():
         self.pso.set_cost_function(self.cost_function)
         self.pso.update_w = True
         self.pso.set_start_position(self.start_parameters)
-        self.pso.set_bounds(2.0)
-        self.pso.set_speed(-0.5,0.5)
+        self.pso.set_bounds(1.0)
+        self.pso.set_speed(-0.25,0.25)
         
     def run_pso(self,nchains,nparticles,niterations):
         self.nchains = nchains
@@ -37,7 +39,8 @@ class Nightmare():
         model = pymc.Model()
         with model:
             params = pymc.Normal('params', mu=self.start_parameters, 
-                                 sd=np.array([1.0]*len(self.start_parameters)),
+                                 sd=np.array([1.0
+                                              ]*len(self.start_parameters)),
                                 shape=(len(self.start_parameters)))
             #params = pymc.Flat('params',shape=(len(self.start_parameters)))           
               
@@ -59,9 +62,30 @@ class Nightmare():
                                 start=self.pso_results, 
                                 njobs=self.nchains,
                                 use_mpi=False,
-                                progressbar=True,) 
-            pymc.traceplot(trace,vars=[params,error])
-            plt.show()
+                                progressbar=False,) 
+
+            
+            cont_flag = True
+            while cont_flag:
+                cont_flag = False
+                conv_stats = gelman_rubin(trace)
+                for i in conv_stats['params']:
+                    if i>1.2:
+                        print "Parameters have not converged, will continue run."
+                        print "Value so far is %s"%i
+                        cont_flag = True
+                        break
+                trace = pymc.sample(int(nsamples*.1), step,
+                                    #start=self.pso_results, 
+                                    njobs=self.nchains,
+                                    use_mpi=False,
+                                    trace = trace,
+                                    progressbar=False,)
+            conv_stats = gelman_rubin(trace)
+            for i in conv_stats['params']:
+                print i,i<1.2
+            #pymc.traceplot(trace,vars=[params,error])
+            #plt.show()            
             return trace
 
 @theano.compile.ops.as_op(itypes=[t.dvector], otypes=[t.dscalar])

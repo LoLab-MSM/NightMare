@@ -121,15 +121,13 @@ def likelihood(position):
 if "__main__" == __name__:
     
     nm = Nightmare(EARM,likelihood,xnominal,'test')
-    nm.run_pso(8, 25,200)
+    nm.run_pso(4, 25,200)
     ranked = nm.pso.return_ranked_populations()
-    np.save('ndim_banana_seed.npy',ranked)
-    # for i in nm.pso_results:
-    #     print i['params']
-    #     display(i['params'])
-    traces = nm.run_DREAM(nsamples=500000)
+    savename = 'unweighted_cost_function_100k_std_1'
+    traces = nm.run_DREAM(nsamples=100000)
     from pymc.backends import text
-    text.dump('earm_traces_from_pymc_save_500000', traces)    
+    
+    text.dump('traces_%s'%savename, traces)    
         
     dictionary_to_pickle = {}
     
@@ -137,13 +135,6 @@ if "__main__" == __name__:
         for var in dictionary:
             dictionary_to_pickle[var] = traces[var] 
     
-    pickle.dump(dictionary_to_pickle, open('test_traces_500000.p', 'wb'))
-    # for n,each in enumerate(dictionary_to_pickle['params'][0]):
-    #     plt.plot(n, likelihood(each),'or')
-    # plt.plot(traces['error'][0])
-    # 
-    # plt.show()
-    
-    quit()
+    pickle.dump(dictionary_to_pickle, open('pickled_traces_%s.p'%savename, 'wb'))
 
 
